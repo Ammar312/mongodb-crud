@@ -52,11 +52,12 @@ window.addEventListener("load", () => {
         post.appendChild(text);
         post.appendChild(btnDiv);
         postContainer.appendChild(post);
-        deleteButton.addEventListener("click", () => deletePostFunc(ele.id));
+        deleteButton.addEventListener("click", () => deletePostFunc(ele._id));
         editButton.addEventListener("click", () =>
-          editPostFunc(ele.id, ele.title, ele.text)
+          editPostFunc(ele._id, ele.title, ele.text)
         );
         console.log(ele);
+        console.log(ele._id);
       });
       //   console.log(response.data);
     })

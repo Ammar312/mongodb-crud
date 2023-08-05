@@ -1,6 +1,8 @@
 import express from "express";
 import { nanoid } from "nanoid";
 import { client } from "../mongodb.mjs";
+import { ObjectId } from "mongodb";
+
 const router = express.Router();
 const dateVar = JSON.stringify(new Date());
 const result = dateVar.slice(0, 11);
@@ -43,45 +45,47 @@ router.post("/post", async (req, res, next) => {
   res.send(`Post Created at ${result}`);
 });
 
-router.put("/post/:postId", (req, res, next) => {
+router.put("/post/:postId", async (req, res, next) => {
   const id = req.params.postId;
+  if (!ObjectId.isValid(id)) {
+    res.status(403).send(`Invalid post id`);
+    return;
+  }
   if (!req.body.title || !req.body.text) {
     res.status(403).send(`Required parameter missing`);
     return;
   }
-  let isFound = false;
-  for (let i = 0; i < posts.length; i++) {
-    if (posts[i].id === id) {
-      posts[i].title = req.body.title;
-      posts[i].text = req.body.text;
-      isFound = true;
-      break;
-    }
+  let updatedData = {};
+  if (req.body.title) {
+    updatedData.title = req.body.title;
   }
-  if (isFound) {
+  if (req.body.text) {
+    updatedData.text = req.body.text;
+  }
+
+  try {
+    const updatedResponse = await dbCollection.updateOne(
+      {
+        _id: new ObjectId(id),
+      },
+      {
+        $set: updatedData,
+      }
+    );
     res.send("Post Updated Successfully");
-  } else {
-    res.status(404).send("Not Found");
+  } catch (error) {
+    res.status(500).send("server error, please try later");
   }
   console.log(id);
 });
 
-router.delete("/post/:postId", (req, res, next) => {
+router.delete("/post/:postId", async (req, res, next) => {
   const id = req.params.postId;
-  let isFound = false;
-  for (let i = 0; i < posts.length; i++) {
-    if (posts[i].id === id) {
-      posts.splice(i, 1);
-      res.send("post deleted successfully");
-      isFound = true;
-      break;
-    }
-  }
-  if (isFound === false) {
-    res.status(404);
-    res.send({
-      message: "delete fail: post not found",
-    });
+  try {
+    await dbCollection.deleteOne({ _id: new ObjectId(id) });
+    res.send("Post Deleted Successfully");
+  } catch (error) {
+    res.status(404).send("Not Found");
   }
 });
 
